@@ -2,8 +2,9 @@ import glfw
 from glfw import *
 import pyglet
 from pyglet.gl import *
+import sys
+sys.path += [sys.path[0] + '\\pyshaders']
 from pyshaders import from_files_names, ShaderCompilationError
-
 import imgui
 from imgui.integrations.glfw import GlfwRenderer
 
