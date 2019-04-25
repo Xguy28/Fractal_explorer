@@ -3,5 +3,5 @@
 Dependencies are https://github.com/swistakm/pyimgui, pyglet, glfw, pyshaders.
 
 
-Pyshaders can be put in working directory with clone https://github.com/gabdube/pyshaders
+Pyshaders can be put in working directory with command: git clone https://github.com/gabdube/pyshaders
 
