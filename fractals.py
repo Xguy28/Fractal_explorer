@@ -23,44 +23,34 @@ def key_callback(window_dict, window, key, scancode, action, mods):
     if(key == glfw.KEY_X):
         window_dict.scalar *= 1.05
     if(key == glfw.KEY_SPACE):
-        window_dict.b += 0.02
+        window_dict.b += 0.01
 
 def window_size_callback(window_dict, window, width, height):
     window_dict.width = width
     window_dict.height = height
     glViewport(0, 0, width, height)
     
-class window_vals:
-    window_dict = {
-        'width' : None,
-        'height': None,
-        'n_iter': 100,
-        'b' : 1,
-        'scalar': 4.5,
-        'x_off': 0,
-        'y_off': 0
-    }
-    def __init__(self):
-        for k in self.window_dict:
-            setattr(self, k, self.window_dict[k])
+class struct:
+    def __init__(self, d):
+        for k in d:
+            setattr(self, k, d[k])
 
 def init():
     if not glfw.init():
         return
-    # Create a windowed mode window and its OpenGL context
-
+    # Create window
     m = glfw.get_primary_monitor()
     mode = glfw.get_video_mode(m)
-    width = mode.size.width//2
-    height = mode.size.height//2
-
-    window = glfw.create_window(width, height, "Fractals", None, None)
+    width = mode.size.width
+    height = mode.size.height
     
-    glfw.make_context_current(window)
+    window = glfw.create_window(width, height, "Fractals", None, None)
     if not window:
         glfw.terminate()
-        return
+        exit(0)
+    glfw.make_context_current(window)
     impl = GlfwRenderer(window)
+    #compile shaders
     try:
         mandelbrot_shader = from_files_names("fractal_v.glsl", "mandelbrot_f.glsl")
         julia_shader = from_files_names("fractal_v.glsl", "julia_f.glsl")
@@ -68,24 +58,33 @@ def init():
     except ShaderCompilationError as e:
         print(e.logs) 
         exit()
-
-    window_dict = window_vals()
-    window_dict.width = width
-    window_dict.height = height
+    #setup data used for window and shaders
+    window_dict = {
+        'width' : width,
+        'height': height,
+        'n_iter': 100,
+        'b' : 1,
+        'scalar': 4.5,
+        'x_off': 0,
+        'y_off': 0
+    }
+    window_dict = struct(window_dict)
+    #setep callback so they can change local variables
     glfw.set_key_callback(window, lambda *args : key_callback(window_dict, *args))
     glfw.set_window_size_callback(window, lambda *args : window_size_callback(window_dict, *args))
+    #quad we are drawing to
     quad = pyglet.graphics.vertex_list(4,
         ('v2f', (-1.0, -1.0, -1.0, 1.0, 1.0, -1.0, 1.0, 1.0)))
-    return window, window_dict, impl, quad, mandelbrot_shader, julia_shader, newton_shader, width, height
+    return window, window_dict, impl, quad, mandelbrot_shader, julia_shader, newton_shader
 
 def main():
     # Initialize the library
-    window, window_dict, impl, quad, mandelbrot_shader, julia_shader, newton_shader, width, height = init()
-    # Loop until the user closes the window
+    window, window_dict, impl, quad, mandelbrot_shader, julia_shader, newton_shader = init()
+    #set mandelbrot shader to default
     shader = mandelbrot_shader
     shader.use()
     while not glfw.window_should_close(window):
-        impl.process_inputs()
+        #setup gui
         imgui.new_frame()
         imgui.begin("Options", True)
         if imgui.button('Mandelbrot', False):
@@ -104,7 +103,7 @@ def main():
         window_dict.b = b_value
 
         x_changed, x_value = imgui.slider_float("x offset", window_dict.x_off, -10, 10)
-        window_dictx_off = x_value
+        window_dict.x_off = x_value
         
         y_changed, y_value = imgui.slider_float("y offset", window_dict.y_off, -10, 10)
         window_dict.y_off = y_value
@@ -115,22 +114,19 @@ def main():
         i_changed, i_value = imgui.slider_float("iterations", window_dict.n_iter, 1, 1000, power = 2)
         window_dict.n_iter = int(i_value)
 
-
         if imgui.button('Reset', False):
             window_dict.x_off = 0
             window_dict.y_off = 0
             window_dict.scalar = 4.5
             window_dict.b = 1
 
-
         if imgui.button('Quit', False):
-            exit(0)
-
-        
+            break        
         imgui.end()
 
-        # Render here, e.g. using pyOpenGL
-       
+        
+        #set uniforms
+        #mandelbrot shader does not have 'b' uniform
         if shader is not mandelbrot_shader:
             shader.uniforms.b = window_dict.b
         shader.uniforms.scalar = window_dict.scalar
@@ -144,13 +140,14 @@ def main():
 
         # Poll for and process events
         glfw.poll_events()
+        impl.process_inputs()
+        #render
         quad.draw(GL_TRIANGLE_STRIP)
         imgui.render()
         impl.render(imgui.get_draw_data())
+   
+
     
-    impl.shutdown()
-    glfw.terminate()
-    exit(0)
 
 if __name__ == "__main__":
     main()
