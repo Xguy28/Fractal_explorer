@@ -43,15 +43,30 @@ def key_callback(window, key, scancode, action, mods):
         scalar *= 1.05
     if(key == glfw.KEY_SPACE):
         b += 0.02
+
+def window_size_callback(window, w, h):
+    global width
+    global height
     
+    width = w
+    height = h
+    glViewport(0, 0, width, height)
+    
+    
+
 def main():
     # Initialize the library
     if not glfw.init():
         return
     # Create a windowed mode window and its OpenGL context
-    width = 1920 * 2
-    height = 1080 * 2
-    window = glfw.create_window(width, height, "Hello World", None, None)
+    global width
+    global height
+    m = glfw.get_primary_monitor()
+    mode = glfw.get_video_mode(m)
+    width = mode.size.width//2
+    height = mode.size.height//2
+
+    window = glfw.create_window(width, height, "Fractals", None, None)
     glfw.make_context_current(window)
     if not window:
         glfw.terminate()
@@ -79,7 +94,7 @@ def main():
 
 
     glfw.set_key_callback(window, key_callback)
-
+    glfw.set_window_size_callback(window, window_size_callback)
     # Loop until the user closes the window
     while not glfw.window_should_close(window):
         global x_off
