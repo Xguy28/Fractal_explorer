@@ -2,9 +2,7 @@ import glfw
 from glfw import *
 import pyglet
 from pyglet.gl import *
-import sys
-sys.path += [sys.path[0] + '\\pyshaders']
-from pyshaders import from_files_names, ShaderCompilationError
+from pyshaders.pyshaders import from_files_names, ShaderCompilationError
 import imgui
 from imgui.integrations.glfw import GlfwRenderer
 
@@ -63,7 +61,7 @@ def init():
         'width' : width,
         'height': height,
         'n_iter': 100,
-        'b' : 1,
+        'b' : 2,
         'scalar': 4.5,
         'x_off': 0,
         'y_off': 0
@@ -89,6 +87,7 @@ def main():
         imgui.begin("Options", True)
         if imgui.button('Mandelbrot', False):
             shader = mandelbrot_shader  
+            
             shader.use()
         if imgui.button('Julia', False):
             shader = julia_shader
@@ -118,7 +117,7 @@ def main():
             window_dict.x_off = 0
             window_dict.y_off = 0
             window_dict.scalar = 4.5
-            window_dict.b = 1
+            window_dict.b = 2 if shader == mandelbrot_shader else 1
 
         if imgui.button('Quit', False):
             break        
@@ -126,9 +125,12 @@ def main():
 
         
         #set uniforms
-        #mandelbrot shader does not have 'b' uniform
-        if shader is not mandelbrot_shader:
+        #pyshaders gives an attribute error if a uniform is not being used
+        #this is stupid, so ignore it
+        try:
             shader.uniforms.b = window_dict.b
+        except AttributeError:
+            pass
         shader.uniforms.scalar = window_dict.scalar
         shader.uniforms.y_off = window_dict.y_off
         shader.uniforms.x_off = window_dict.x_off
@@ -143,9 +145,10 @@ def main():
         impl.process_inputs()
         #render
         quad.draw(GL_TRIANGLE_STRIP)
+        
         imgui.render()
         impl.render(imgui.get_draw_data())
-   
+        
 
     
 
